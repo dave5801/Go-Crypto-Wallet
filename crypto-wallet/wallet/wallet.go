@@ -4,48 +4,25 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/x509"
+	"crypto/sha256"
 	"encoding/hex"
-	"encoding/pem"
-	"os"
 )
 
-// Wallet holds the private and public key pair
 type Wallet struct {
 	PrivateKey *ecdsa.PrivateKey
-	PublicKey  string
+	Address    string
 }
 
-// GenerateWallet creates a new wallet with ECDSA key pair
-func GenerateWallet() (*Wallet, error) {
-	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert public key to a readable format
-	pubKeyBytes := append(privKey.PublicKey.X.Bytes(), privKey.PublicKey.Y.Bytes()...)
-	pubKeyHex := hex.EncodeToString(pubKeyBytes)
-
-	return &Wallet{
-		PrivateKey: privKey,
-		PublicKey:  pubKeyHex,
-	}, nil
+// NewWallet generates a new wallet with a private key and address
+func NewWallet() *Wallet {
+	privKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	address := generateAddress(privKey)
+	return &Wallet{PrivateKey: privKey, Address: address}
 }
 
-// SavePrivateKey stores the private key in a file
-func SavePrivateKey(priv *ecdsa.PrivateKey, filename string) error {
-	keyBytes, err := x509.MarshalECPrivateKey(priv)
-	if err != nil {
-		return err
-	}
-
-	pemBlock := &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes}
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	return pem.Encode(file, pemBlock)
+// generateAddress creates a wallet address from the public key
+func generateAddress(privKey *ecdsa.PrivateKey) string {
+	pubKey := append(privKey.PublicKey.X.Bytes(), privKey.PublicKey.Y.Bytes()...)
+	hash := sha256.Sum256(pubKey)
+	return hex.EncodeToString(hash[:])
 }

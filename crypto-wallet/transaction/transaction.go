@@ -1,52 +1,32 @@
-package transaction
+package transactions
 
 import (
-	"bytes"
 	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"net/http"
+	"math/rand"
 )
 
-// Transaction represents a simple crypto transaction
+// Transaction represents a basic cryptocurrency transaction
 type Transaction struct {
 	From   string
 	To     string
 	Amount float64
+	Hash   string
 }
 
-// SignTransaction signs a transaction with a private key
-func SignTransaction(tx Transaction, privKey *ecdsa.PrivateKey) (string, error) {
-	txData := fmt.Sprintf("%s%s%f", tx.From, tx.To, tx.Amount)
-	hash := sha256.Sum256([]byte(txData))
-
-	r, s, err := ecdsa.Sign(rand.Reader, privKey, hash[:])
-	if err != nil {
-		return "", err
-	}
-
-	signature := append(r.Bytes(), s.Bytes()...)
-	return hex.EncodeToString(signature), nil
+// NewTransaction creates a new signed transaction
+func NewTransaction(from string, to string, amount float64, privKey *ecdsa.PrivateKey) *Transaction {
+	tx := &Transaction{From: from, To: to, Amount: amount}
+	tx.Hash = tx.signTransaction(privKey)
+	return tx
 }
 
-// SendTransaction submits a transaction to an API (e.g., blockchain network)
-func SendTransaction(tx Transaction, privKey *ecdsa.PrivateKey) error {
-	signature, err := SignTransaction(tx, privKey)
-	if err != nil {
-		return err
-	}
-
-	txData := fmt.Sprintf(`{"from": "%s", "to": "%s", "amount": %f, "signature": "%s"}`,
-		tx.From, tx.To, tx.Amount, signature)
-
-	resp, err := http.Post("https://api.crypto-network/send", "application/json", bytes.NewBuffer([]byte(txData)))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("Transaction sent! Status:", resp.Status)
-	return nil
+// signTransaction hashes the transaction and mocks a digital signature
+func (tx *Transaction) signTransaction(privKey *ecdsa.PrivateKey) string {
+	data := fmt.Sprintf("%s%s%f%d", tx.From, tx.To, tx.Amount, rand.Intn(1000))
+	hash := sha256.Sum256([]byte(data))
+	return hex.EncodeToString(hash[:])
 }
+

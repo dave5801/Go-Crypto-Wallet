@@ -1,38 +1,30 @@
 package main
 
 import (
-	"crypto-wallet/transaction"
-	"crypto-wallet/wallet"
 	"fmt"
+	"log"
+
+	"crypto-wallet/wallet"
 )
 
 func main() {
-	// Generate a new wallet
-	myWallet, err := wallet.GenerateWallet()
+	// Create a new wallet
+	w := wallet.NewWallet()
+
+	// Display wallet details
+	fmt.Println("New Wallet Address:", w.Address)
+
+	// Save private key
+	err := wallet.SaveWallet(w, "wallet.json")
 	if err != nil {
-		fmt.Println("Error creating wallet:", err)
-		return
+		log.Fatal("Error saving wallet:", err)
 	}
 
-	// Save the private key
-	err = wallet.SavePrivateKey(myWallet.PrivateKey, "wallet.pem")
+	// Load the wallet
+	loadedWallet, err := wallet.LoadWallet("wallet.json")
 	if err != nil {
-		fmt.Println("Error saving private key:", err)
-		return
+		log.Fatal("Error loading wallet:", err)
 	}
 
-	fmt.Println("Wallet created! Public Key:", myWallet.PublicKey)
-
-	// Simulate sending a transaction
-	tx := transaction.Transaction{
-		From:   myWallet.PublicKey,
-		To:     "receiver_public_key",
-		Amount: 0.01,
-	}
-
-	err = transaction.SendTransaction(tx, myWallet.PrivateKey)
-	if err != nil {
-		fmt.Println("Transaction failed:", err)
-		return
-	}
+	fmt.Println("Loaded Wallet Address:", loadedWallet.Address)
 }
